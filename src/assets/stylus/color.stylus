@@ -1,0 +1,11 @@
+// SideMenu
+// #282C34
+$headerBg = white
+$headerTextColor = black
+$barGray = #333333
+$activeColor = $googleBlue
+// Google
+$googleRed = #f4433c
+$googleBlue = #2d85f0
+$googleGreen = #0aa858
+$googleYellow = #ffbc32

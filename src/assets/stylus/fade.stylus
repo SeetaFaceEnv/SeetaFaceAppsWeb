@@ -1,0 +1,18 @@
+// 侧边栏出现效果
+.header-fade-show-enter-active
+  transition all 1s ease
+.header-fade-show-enter
+  transform translateY(-100px)
+  opacity 0
+// 侧边栏出现效果
+.menu-fade-show-enter-active
+  transition all 1s ease
+.menu-fade-show-enter
+  transform translateX(-100px)
+  opacity 0
+// Card出现效果
+.card-fade-show-enter-active
+  transition all 1s ease
+.card-fade-show-enter 
+  transform translateX(70px)
+  opacity: 0

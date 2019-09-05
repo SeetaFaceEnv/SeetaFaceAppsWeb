@@ -1,0 +1,70 @@
+/* 自定义element-ui样式 */
+// 设置el-card__header下边框渐变
+.el-card__header
+  padding 10px 20px
+  // border-bottom 2px transparent solid
+  // border-image linear-gradient(to right, #0161E5, #E40493) 1 10
+// 设置el-card__body高度计算方式
+.el-card__body
+  padding 10px 20px 20px 20px
+  height calc(100% - 86px)
+
+// 设置el-menu样式
+.el-menu
+  background none
+.el-submenu__title
+  color white !important
+  text-align left
+  &:hover
+    background linear-gradient(to right, rgba(151,246,255, 0.4), rgba(151,246,255, 0))
+  i
+    color white
+.el-menu-item
+  color white !important
+  text-align left
+  padding-left 64px !important
+
+.el-menu--inline
+  background none
+.el-menu-item:hover
+  // box-shadow red 0 0 20px 0
+  background linear-gradient(to right, rgba(151,246,255, 0.4), rgba(151,246,255, 0))
+.el-menu-item.is-active
+  background linear-gradient(to right, rgba(151,246,255, 0.4), rgba(151,246,255, 0))
+.el-menu-item-group__title // 隐藏菜单分组显示
+  display: none
+
+// 设置下拉选框样式
+.el-dropdown-menu__item
+  font-size 14px !important
+  padding 8px 10px !important
+
+// 设置浏览大图关闭图标样式
+.el-icon-circle-close
+  color #ffbc32
+
+// 表格（表头和行）样式
+.table__header
+  font-size 14px
+  background #F6F6F6 !important
+  color #353535
+.table__row
+  font-size 14px
+  height 64px
+
+// 表格中span样式
+.span__bt
+  color #346DD4
+  cursor pointer
+.el-divider--vertical
+  margin 0 20px
+
+// 上传图片超过最大限制时，隐藏上传图标
+.disabled .el-upload--picture-card
+  display none
+
+// 标签样式
+.el-tag
+  margin-right 10px
+  &:last-child
+    margin-right 0

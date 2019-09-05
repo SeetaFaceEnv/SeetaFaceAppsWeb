@@ -1,0 +1,3 @@
+// 配置页头的相关参数
+$header-height = 50px
+$header-li-width = 70px

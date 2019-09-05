@@ -1,0 +1,44 @@
+html,
+body,
+div,
+header,
+nav,
+section,
+aside,
+main,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+ul,
+li,
+form,
+input,
+p {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html,
+body {
+    width: 100%;
+    height: 100%;
+    font-size: 14px;
+    background: #f2f2f2;
+}
+
+ol,
+ul,
+li {
+    list-style: none;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+a {
+    color: inherit;
+    text-decoration: none;
+}
