@@ -28,7 +28,7 @@
 
 > **Tip:** 详细功能介绍及使用手册请参考以下资料
 ##### 参考资料
-[使用手册](链接地址)
+[使用手册](https://github.com/SeetaFaceEnv/SeetaAccessControlComminty/blob/master/doc/manual.md)
 
 ## 项目实现（前端部分）
 ### Vue 2.x
