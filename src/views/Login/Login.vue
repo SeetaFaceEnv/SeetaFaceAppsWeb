@@ -1,19 +1,25 @@
 <template>
   <div class="login-bg">
-    <img id="logo" src="@/assets/images/login-logo.png"/>
+    <img id="logo" src="@assets/images/login-logo.png"/>
     <transition name="card-fade-show">
       <el-card v-show="isShow" class="login-box">
         <h1 style="margin-bottom: 50px">账号登录</h1>
         <el-form :model="form" :rules="rules" ref="form" @submit.native.prevent>
           <el-form-item label="用户名：" prop="username">
-            <el-input v-model="form.username"></el-input>
+            <el-input v-model="form.username">
+              <i slot="prefix" style="padding-left: 6px" class="fa fa-user" aria-hidden="true"></i>
+            </el-input>
           </el-form-item>
           <el-form-item label="密码：" prop="password">
-            <el-input v-model="form.password" type="password"></el-input>
+            <el-input v-model="form.password" type="password" show-password>
+              <i slot="prefix" style="padding-left: 6px" class="fa fa-key" aria-hidden="true"></i>
+            </el-input>
           </el-form-item>
           <el-form-item label="验证码：" prop="verificationCode">
             <br/>
-            <el-input v-model="form.verificationCode" style="width: 140px;margin-right: 40px"></el-input>
+            <el-input v-model="form.verificationCode" style="width: 140px;margin-right: 40px">
+              <i slot="prefix" style="padding-left: 6px" class="fa fa-picture-o" aria-hidden="true"></i>
+            </el-input>
             <el-tooltip content="点击更换验证码" placement="top">
               <img @click="changeImg()" :src="baseUrl + 'backend/account/generateVerifyCode?code_tag=' + time" alt="验证码"/>
             </el-tooltip>
@@ -28,9 +34,9 @@
 </template>
 <script>
 import NodeRSA from 'node-rsa'
-import baseUrl from '@/api/baseUrl'
-import { accountPreLogin, accountLogin } from '@/api/getData'
-import { validatePasswordMoreSix } from '@/utils/validateForm'
+import baseUrl from '@api/baseUrl'
+import { accountPreLogin, accountLogin } from '@api/getData'
+import { validatePasswordMoreSix } from '@utils/validateForm'
 export default {
   data () {
     return {
@@ -88,12 +94,12 @@ export default {
       let pubKey = new NodeRSA(sessionStorage.getItem('public_key'))
       const res = await accountLogin({
         account: this.form.username,
-        password: pubKey.encrypt(this.form.password, 'base64'),
-        session_id: sessionStorage.getItem('session_id')
+        password: pubKey.encrypt(this.form.password, 'base64')
       })
       if (res.data.result === 0) {
         const accessToken = pubKey.decryptPublic(res.data.access_token, 'utf-8')
         sessionStorage.setItem('access_token', accessToken.substr(92))
+        sessionStorage.setItem('topic_id', res.data.topic_id)
         sessionStorage.setItem('username', res.data.username)
         this.$router.push({ name: 'field-manage' }) // 进入管理页面
         this.$handleSuccessMessage('登录成功')

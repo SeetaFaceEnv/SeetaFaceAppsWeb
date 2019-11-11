@@ -8,7 +8,7 @@
       <!-- 查询栏 -->
       <QueryBar slot="queryBar">
         <div slot="queryBarLeft">
-          设备编码：<el-input v-model="queryForm.code" clearable style="width: 150px;margin-right: 10px"></el-input>
+          设备名称：<el-input v-model="queryForm.name" clearable class="query-bar-item"></el-input>
           日期区间：
           <el-date-picker
             style="margin-right: 10px"
@@ -32,6 +32,7 @@
         <el-table-column label="内容" prop="content"></el-table-column>
         <el-table-column label="记录时间">
           <template slot-scope="scope">
+            <i class="el-icon-time"></i>
             {{ transformToDateTime(scope.row.time) }}
           </template>
         </el-table-column>
@@ -51,10 +52,10 @@
 </template>
 <script>
 import moment from 'moment'
-import Card from '@/components/Card/Card'
-import QueryBar from '@/components/Bar/QueryBar'
-import { getLogRecordList } from '@/api/getData'
-import { exportCSV } from '@/utils/exportFile.js'
+import Card from '@comp/Card/Card'
+import QueryBar from '@comp/Bar/QueryBar'
+import { getLogRecordList } from '@api/getData'
+import { exportCSV } from '@utils/exportFile.js'
 export default {
   data () {
     return {
@@ -78,9 +79,9 @@ export default {
     async getData () {
       this.tableData = []
       const res = await getLogRecordList({
-        device_code: this.queryForm.code || '',
-        time_begin: this.queryForm.dateRange ? this.queryForm.dateRange[0] / 1000 : '',
-        time_end: this.queryForm.dateRange ? this.queryForm.dateRange[1] / 1000 : '',
+        device_name: this.queryForm.name || '',
+        time_begin: this.queryForm.dateRange ? this.queryForm.dateRange[0] : '',
+        time_end: this.queryForm.dateRange ? this.queryForm.dateRange[1] : '',
         start_index: (this.currentPage - 1) * this.pageSize,
         get_count: this.pageSize
       })
@@ -106,6 +107,7 @@ export default {
         for (let item of this.tableData) {
           let tempObj = {}
           tempObj.device_name = item.device_name
+          tempObj.device_code = item.device_code
           tempObj.content = item.content
           tempObj.time = this.transformToDateTime(item.time)
           arry.push(tempObj)
@@ -138,7 +140,7 @@ export default {
     },
     // 时间戳转换为标准时间
     transformToDateTime (val) {
-      return moment(val * 1000).format('YYYY-MM-DD HH:mm:ss')
+      return moment(val).format('YYYY-MM-DD HH:mm:ss')
     },
     // 切换分页条件
     handleSizeChange (val) {

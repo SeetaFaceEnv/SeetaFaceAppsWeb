@@ -6,41 +6,56 @@
         <el-button @click="addForm()" type="primary">添加</el-button>
       </div>
       <!-- 查询栏 -->
-      <!-- <QueryBar slot="queryBar">
+      <QueryBar slot="queryBar">
         <div slot="queryBarLeft">
-          <el-button>查询</el-button>
+          查询字段：
+          <el-select v-model="queryForm.field_id" @clear="queryForm.search_value = ''" clearable class="query-bar-item">
+            <el-option
+              v-for="item in fieldList"
+              :key="item.id"
+              :label="item.name"
+              :value="item.id"
+            ></el-option>
+          </el-select>
+          查询内容：<el-input v-model="queryForm.search_value" :disabled="!queryForm.field_id" clearable class="query-bar-item"></el-input>
+          <el-button @click="getData()">查询</el-button>
+          <el-button @click="resetGetData()">重置</el-button>
         </div>
-      </QueryBar> -->
+      </QueryBar>
       <!-- 表格 -->
       <el-table slot="contain" header-cell-class-name="table__header" row-class-name="table__row"
-        :data="tableData" stripe height="calc(100% - 30px + 48px)">
+        :data="tableData" stripe height="calc(100% - 30px)">
         <el-table-column v-for="(item, index) in fieldList" :key="index" :label="item.name" show-overflow-tooltip>
           <template slot-scope="scope">
             {{ scope.row.attributes[item.id] }}
           </template>
         </el-table-column>
-        <el-table-column label="照片" >
+        <el-table-column label="照片" width="120">
           <template slot-scope="scope">
             <el-image class="member-image" v-if="scope.row.images[0]" :src="scope.row.images[0].image_url"
-              @click="showBigImg(scope.row)" :preview-src-list="srcList"/>
+              @click="showBigImg(scope.row)" :preview-src-list="srcList">
+              <div slot="placeholder" class="loading-img">
+                <i class="fa fa-spinner fa-3x fa-pulse" aria-hidden="true"></i>
+              </div>
+            </el-image>
           </template>
         </el-table-column>
         <!-- 所属设备、设备组 -->
-        <el-table-column label="所属设备" >
+        <el-table-column label="所属设备">
           <template slot-scope="scope">
             <el-tag v-for="(item, index) in scope.row.device_names" :key="index">
               {{item}}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="所属设备组" >
+        <el-table-column label="所属设备组">
           <template slot-scope="scope">
             <el-tag v-for="(item, index) in scope.row.group_names" :key="index">
               {{item}}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作">
+        <el-table-column label="操作" width="160">
           <template slot-scope="scope">
             <span class="span__bt" @click="editForm(scope.row)">编 辑</span>
             <el-divider direction="vertical"></el-divider>
@@ -97,7 +112,7 @@
         <el-form-item label="照片：" prop="uploadFiles">
           <el-upload
             ref="upload-images"
-            accept=".jpg,.png,.JPG,.PNG"
+            accept=".jpg,.jpeg,.png,.bmp"
             :class="{disabled: imagesUploadDisabled}"
             action=""
             :limit="maxUploadImageNumber"
@@ -118,13 +133,14 @@
   </div>
 </template>
 <script>
-import Card from '@/components/Card/Card'
-// import QueryBar from '@/components/Bar/QueryBar'
-import { getMemberList, addMemberList, editMemberList, delMemberList, getFieldList, getDeviceList, getDeviceGroupList } from '@/api/getData'
+import Card from '@comp/Card/Card'
+import QueryBar from '@comp/Bar/QueryBar'
+import { getMemberList, addMemberList, editMemberList, delMemberList, getFieldList, getDeviceList, getDeviceGroupList } from '@api/getData'
 export default {
   data () {
     return {
       tableData: [], // 表格数据
+      queryForm: {}, // 查询表单
       // 分页
       currentPage: 1,
       pageSize: 10,
@@ -144,7 +160,7 @@ export default {
       deviceGroupList: [], // 设备组列表
       uploadFiles: [], // 上传底库图片列表
       tempUploadFiles: [], // 编辑时保存编辑前底库图片列表
-      maxUploadImageNumber: 1, // 最大上传底库图片数量
+      maxUploadImageNumber: 3, // 最大上传底库图片数量
       srcList: [] // 大图预览的图片地址
     }
   },
@@ -154,18 +170,23 @@ export default {
     }
   },
   components: {
-    Card
-    // QueryBar
+    Card,
+    QueryBar
   },
   mounted () {
-    this.getFieldList()
+    this.getFieldList() // 获取所有组态字段
     this.getData()
   },
   methods: {
     // 获取表格数据
     async getData () {
       this.tableData = []
+      let fieldObj = {}
+      if (this.queryForm.field_id) { // 当选择查询字段后 构造fieldObj
+        fieldObj[this.queryForm.field_id] = this.queryForm.search_value
+      }
       const res = await getMemberList({
+        field: JSON.stringify(fieldObj),
         start_index: (this.currentPage - 1) * this.pageSize,
         get_count: this.pageSize
       })
@@ -173,6 +194,11 @@ export default {
         this.tableData = res.data.members
         this.totalCount = res.data.total
       }
+    },
+    // 重置搜索
+    resetGetData () {
+      this.queryForm = {}
+      this.getData()
     },
     // 提交表单
     formSubmit (formName) {
@@ -344,8 +370,5 @@ export default {
   }
 }
 </script>
-<style lang="stylus">
-.member-image
-  width 100px
-  height 100px
+<style lang="stylus" scoped>
 </style>

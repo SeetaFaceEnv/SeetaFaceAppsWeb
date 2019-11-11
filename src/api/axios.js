@@ -1,39 +1,30 @@
 import axios from 'axios'
+import store from '../store' // 引入状态管理
 import Router from '@/router'
+import baseUrl from './baseUrl'
+import { getType } from '@utils/getType.js' // 获取准确数据类型
 import { Notification } from 'element-ui'
-// 引入状态管理
-import store from '../store'
-
-const baseUrl = window.g.baseURL
 
 axios.defaults.baseURL = baseUrl
 
 // axios.defaults.timeout = 10000
 
-export default async (url, data) => {
-  let res
-  res = await axios.post(url, data)
-  // token过期，返回登录页
-  if (res.data.result === 1111) {
-    Notification.error({
-      title: '错误',
-      message: res.data.msg,
-      duration: 3000
-    })
-    Router.push('/')
-  } else if (res.data.result !== 0) {
-    // 返回值不为0，提示用户错误信息
-    Notification.error({
-      title: '错误',
-      message: res.data.msg,
-      duration: 2000
-    })
+export default (method, url, data, config) => {
+  method = method.toLowerCase()
+  // 根据method实现对应请求方式
+  switch (method) {
+    case 'get':
+      return axios.post(url, { params: data }, config)
+    case 'post':
+      return axios.post(url, data, config)
+    default:
+      notificationError('错误', '请检查请求方式', 0)
+      return false
   }
-  return res
 }
 
 // 一、请求拦截器
-axios.interceptors.request.use(function (config) {
+axios.interceptors.request.use((config) => {
   store.commit('openIsSubmitting') // 更改为提交中
   const fm = new FormData()
   if (config.data) {
@@ -50,25 +41,52 @@ axios.interceptors.request.use(function (config) {
   }
   config.data = fm
   return config
-}, function (error) {
+}, (error) => {
   // 对请求错误做些什么
-  Notification.error({
-    title: '系统错误',
-    message: '服务器连接失败',
-    duration: 1500
-  })
+  notificationError('系统错误', '服务器连接失败')
   return Promise.reject(error)
 })
+
 // 二、响应拦截器
-axios.interceptors.response.use(function (response) {
+axios.interceptors.response.use((res) => {
   store.commit('closeIsSubmitting') // 更改为提交完成
-  return response
-}, function (error) {
+  // 判断 返回值是否为 blob （两种情况）
+  // 1、返回值为 文件流 （无需处理 直接返回下载）
+  // 2、返回值为 错误码转化的blob （转为obj 并提示错误信息）
+  if (getType(res.data) === 'Blob') {
+    if (res.data.type === 'text/html') {
+      // console.log('返回错误')
+      let fileReader = new FileReader()
+      fileReader.onload = (e) => {
+        let tempData = JSON.parse(e.target.result)
+        notificationError('错误', tempData.msg, 2000)
+      }
+      fileReader.readAsText(res.data)
+    }
+    return res
+  }
+  // token过期，返回登录页
+  if (res.data.result === 1111) {
+    if (store.state.mqttClient && store.state.mqttTopic) {
+      store.state.mqttClient.unsubscribe(store.state.mqttTopic) // 退出登录前 取消订阅当前消息通道
+    }
+    notificationError('错误', res.data.msg, 3000)
+    Router.push('/')
+  } else if (res.data.result !== 0) {
+    // 返回值不为0，提示用户错误信息
+    notificationError('错误', res.data.msg, 2000)
+  }
+  return res
+}, (error) => {
   // 对响应错误做点什么
-  Notification.error({
-    title: '系统错误',
-    message: '服务器连接失败',
-    duration: 1500
-  })
+  notificationError('系统错误', '服务器连接失败')
   return Promise.reject(error)
 })
+
+function notificationError (title, msg, duration) {
+  Notification.error({
+    title: title,
+    message: msg,
+    duration: duration !== null ? duration : 1500
+  })
+}

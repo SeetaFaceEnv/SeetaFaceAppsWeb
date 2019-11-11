@@ -59,6 +59,16 @@
         <div v-if="submitType === 'edit'">
           <!-- 设备参数 -->
           <el-divider>设备参数</el-divider>
+          <el-form-item label="设备屏保：" prop="device_params.screensaver_switch">
+            <el-select v-model="form.device_params.screensaver_switch" style="width: 200px">
+              <el-option
+                v-for="item in options"
+                :key="item.value"
+                :label="item.label"
+                :value="item.value"
+              ></el-option>
+            </el-select>
+          </el-form-item>
           <el-form-item label="日志上报等级：" prop="device_params.volume">
             <el-select v-model="form.device_params.log_level" style="width: 200px">
               <el-option
@@ -80,7 +90,7 @@
             </el-select>
           </el-form-item>
           <el-form-item label="音量：" prop="device_params.volume">
-            <el-input-number v-model="form.device_params.volume " :min="0" :max="100" :step="10"/>
+            <el-input-number v-model="form.device_params.volume" :min="0" :max="100" :step="10"/>
           </el-form-item>
         </div>
       </el-form>
@@ -109,9 +119,9 @@
   </div>
 </template>
 <script>
-import Card from '@/components/Card/Card'
-// import QueryBar from '@/components/Bar/QueryBar'
-import { getDeviceGroupList, addDeviceGroupList, editDeviceGroupList, delDeviceGroupList } from '@/api/getData'
+import Card from '@comp/Card/Card'
+// import QueryBar from '@comp/Bar/QueryBar'
+import { getDeviceGroupList, addDeviceGroupList, editDeviceGroupList, delDeviceGroupList } from '@api/getData'
 export default {
   data () {
     return {
@@ -244,5 +254,5 @@ export default {
   }
 }
 </script>
-<style lang="stylus">
+<style lang="stylus" scoped>
 </style>

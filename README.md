@@ -23,6 +23,7 @@
     - Card 【卡片】
     - Contain 【包裹容器】
     - Exception 【异常处理】
+    - Header 【头部导航】
     - Menu 【菜单导航】
   - utils 【工具类】
   - views 【视图目录】
@@ -84,4 +85,10 @@ server {
 window.g = {
   baseURL: 'http://192.168.0.8:xxxx/' // 后台地址
 }
+```
+
+**Tips**
+```
+src/assets/stylus/custom.stylus // 自定义样式
+src/assets/stylus/element-ui.stylus // element-ui相关样式
 ```

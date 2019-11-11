@@ -9,8 +9,8 @@
       <!-- 查询栏 -->
       <QueryBar slot="queryBar">
         <div slot="queryBarLeft">
-          设备名称：<el-input v-model="queryForm.name" clearable style="width: 150px;margin-right: 10px"></el-input>
-          设备编码：<el-input v-model="queryForm.code" clearable style="width: 150px;margin-right: 10px"></el-input>
+          设备名称：<el-input v-model="queryForm.name" clearable class="query-bar-item"></el-input>
+          设备编码：<el-input v-model="queryForm.code" clearable class="query-bar-item"></el-input>
           <el-button @click="getData()">查询</el-button>
           <el-button @click="resetGetData()">重置</el-button>
         </div>
@@ -26,10 +26,24 @@
             {{ deviceType[props.row.type] }}
           </template>
         </el-table-column>
+        <el-table-column prop="type" label="流媒体-时间模板">
+          <template slot-scope="scope">
+            <!-- 展示 所绑定 流媒体-时间模板 对应关系（注意样式修改以保证美观） -->
+            <div v-for="(item, index) in scope.row.stream_time_template" :key="index">
+              <el-tag>{{item.stream_name}}</el-tag>
+              <i v-if="item.time_template_name" type="success" class="fa fa-angle-double-right" aria-hidden="true"></i>
+              <el-tag v-if="item.time_template_name" type="success" style="margin-left: 10px">{{item.time_template_name}}</el-tag>
+            </div>
+          </template>
+        </el-table-column>
         <el-table-column prop="type" label="设备状态">
           <template slot-scope="props">
-            <img v-if="props.row.alive === 1" src="@/assets/images/normal_light.png">
-            <img v-else src="@/assets/images/abnormal_light.png">
+            <el-tooltip v-if="props.row.alive === 1" content="在线" placement="right" :open-delay=200>
+              <img src="@assets/images/normal_light.png">
+            </el-tooltip>
+            <el-tooltip v-else content="离线" placement="right" :open-delay=200>
+              <img src="@assets/images/abnormal_light.png">
+            </el-tooltip>
           </template>
         </el-table-column>
         <el-table-column label="操作" width="320">
@@ -70,13 +84,13 @@
       class="input_box"
       @close="dialogClose()"
     >
-      <el-form :model="form" :rules="rules" style="text-align: left" ref="form" label-width="140px">
+      <el-form :model="form" :rules="rules" style="text-align: left" ref="form" label-width="200px">
         <div v-if="submitType === 'add' || submitType === 'edit' ">
           <el-form-item label="设备名称：" prop="name">
             <el-input v-model="form.name" style="width: 200px"></el-input>
           </el-form-item>
           <el-form-item label="设备编码：" prop="code">
-            <el-select @change="showDeviceType" v-model="form.code" style="width: 200px">
+            <el-select @change="showDeviceType" v-model="form.code" :disabled="submitType === 'edit'" style="width: 200px">
               <el-option
                 v-for="item in deviceList"
                 :key="item.device_code"
@@ -100,6 +114,13 @@
           </el-form-item>
         </div>
         <div v-if="submitType === 'edit'">
+          <!-- 新增 第三方 上报地址 (认证一体机 有 1:1上报地址) -->
+          <el-form-item v-if="form.type === 1" label="1:1上报地址：" prop="report_11">
+            <el-input v-model="form.report_11" style="width: 350px"/>
+          </el-form-item>
+          <el-form-item label="1:n上报地址：" prop="report_1n">
+            <el-input v-model="form.report_1n" style="width: 350px"/>
+          </el-form-item>
           <!-- 设备参数 -->
           <el-divider>设备参数</el-divider>
           <el-form-item label="日志上报等级：" prop="device_params.volume">
@@ -112,8 +133,18 @@
               ></el-option>
             </el-select>
           </el-form-item>
-          <!-- 门禁机、人证一体机 有声音选项 -->
+          <!-- 门禁机、人证一体机 声音、屏保 选项 -->
           <div v-if="form.type === 1 || form.type === 2">
+            <el-form-item label="设备屏保：" prop="device_params.screensaver_switch">
+              <el-select v-model="form.device_params.screensaver_switch" style="width: 200px">
+                <el-option
+                  v-for="item in options"
+                  :key="item.value"
+                  :label="item.label"
+                  :value="item.value"
+                ></el-option>
+              </el-select>
+            </el-form-item>
             <el-form-item label="声音开启：" prop="device_params.voice_switch">
               <el-select v-model="form.device_params.voice_switch" style="width: 200px">
                 <el-option
@@ -124,8 +155,17 @@
                 ></el-option>
               </el-select>
             </el-form-item>
-            <el-form-item label="音量：" prop="device_params.volume">
+            <el-form-item v-if="form.device_params.voice_switch === 1" label="音量：" prop="device_params.volume">
               <el-input-number v-model="form.device_params.volume " :min="0" :max="100" :step="10"/>
+            </el-form-item>
+          </div>
+          <!-- PC智能网关 -->
+          <div v-if="form.type === 4">
+            <el-form-item label="继电器地址：" prop="device_params.relay_host">
+              <el-input v-model="form.device_params.relay_host" style="width: 350px"/>
+            </el-form-item>
+            <el-form-item label="继电器保持时长(s)：" prop="device_params.relay_hold_time">
+              <el-input-number v-model="form.device_params.relay_hold_time" :min="1" :step="1"/>
             </el-form-item>
           </div>
           <div v-if="form.type === 1 || form.type === 2">
@@ -143,7 +183,7 @@
               </el-select>
             </el-form-item>
             <el-form-item label="识别类型：" prop="camera_params.recognize_type">
-              <el-tooltip content="1:1识别模式仅对人证一体机设备生效" placement="right">
+              <el-tooltip content="1:1识别模式仅对人证一体机设备生效" :disabled="form.type === 1 ? false : true" placement="right">
                 <el-select v-model="form.camera_params.recognize_type" style="width: 200px">
                   <el-option
                     v-for="item in recognizeTypeOptions"
@@ -155,38 +195,28 @@
               </el-tooltip>
             </el-form-item>
           <el-form-item v-if="form.camera_params.recognize_type === 2" label="1:1验证阈值：" prop="camera_params.threshold_11">
-            <el-input-number v-model="form.camera_params.threshold_11 " :min="0.01" :max="0.99" :step="0.1"/>
+            <el-input-number v-model="form.camera_params.threshold_11" :min="0.01" :max="0.99" :step="0.01"/>
+          </el-form-item>
+          <el-form-item v-if="form.camera_params.recognize_type === 2" label="最大尝试人脸抓拍时长(s)：" prop="camera_params.capture_max_interval">
+            <el-input-number v-model="form.camera_params.capture_max_interval" :min="1" :max="1000" :step="1"/>
           </el-form-item>
           <el-form-item v-if="form.camera_params.recognize_type === 1" label="1:n验证阈值：" prop="camera_params.confidence">
-            <el-input-number v-model="form.camera_params.confidence " :min="0.01" :max="0.99" :step="0.1"/>
+            <el-input-number v-model="form.camera_params.confidence" :min="0.01" :max="0.99" :step="0.01"/>
           </el-form-item>
           <el-form-item v-if="form.camera_params.recognize_type === 1" label="1:n不可信阈值：" prop="camera_params.unsure">
-            <el-input-number v-model="form.camera_params.unsure " :min="0.01" :max="0.99" :step="0.1"/>
+            <el-input-number v-model="form.camera_params.unsure" :min="0.01" :max="0.99" :step="0.01"/>
           </el-form-item>
           <el-form-item label="最小清晰度：" prop="camera_params.min_clarity">
-            <el-input-number v-model="form.camera_params.min_clarity " :min="0.01" :max="0.99" :step="0.1"/>
+            <el-input-number v-model="form.camera_params.min_clarity" :min="0.01" :max="0.99" :step="0.01"/>
           </el-form-item>
           <el-form-item label="最小人脸宽度：" prop="camera_params.min_face">
-            <el-input-number v-model="form.camera_params.min_face " :min="10" :max="100000" :step="100"/>
+            <el-input-number v-model="form.camera_params.min_face" :min="10" :max="100000" :step="100"/>
           </el-form-item>
           <el-form-item label="最大人脸角度：" prop="camera_params.max_angle">
-            <el-input-number v-model="form.camera_params.max_angle " :min="10" :max="90" :step="10"/>
+            <el-input-number v-model="form.camera_params.max_angle" :min="10" :max="90" :step="10"/>
           </el-form-item>
           <el-form-item label="截取比例：" prop="camera_params.crop_ratio">
-            <el-input-number v-model="form.camera_params.crop_ratio " :min="0.1" :max="100" :step="1"/>
-          </el-form-item>
-          <el-form-item label="最大尝试人脸抓拍时长(s)：" prop="camera_params.capture_max_interval">
-            <el-input-number v-model="form.camera_params.capture_max_interval " :min="1" :max="1000" :step="1"/>
-          </el-form-item>
-          <el-form-item label="上报未识别人员：" prop="camera_params.not_pass_report">
-            <el-select v-model="form.camera_params.not_pass_report" style="width: 200px">
-              <el-option
-                v-for="item in options"
-                :key="item.value"
-                :label="item.label"
-                :value="item.value"
-              ></el-option>
-            </el-select>
+            <el-input-number v-model="form.camera_params.crop_ratio" :min="0.1" :max="100" :step="1"/>
           </el-form-item>
           <el-form-item label="闪光灯：" prop="camera_params.is_light">
             <el-select v-model="form.camera_params.is_light" style="width: 200px">
@@ -208,8 +238,28 @@
               ></el-option>
             </el-select>
           </el-form-item>
+          <el-form-item label="识别模式：" prop="camera_params.recognition_mode">
+            <el-select v-model="form.camera_params.recognition_mode" style="width: 200px">
+              <el-option
+                v-for="item in recognitionModeOptions"
+                :key="item.value"
+                :label="item.label"
+                :value="item.value"
+              ></el-option>
+            </el-select>
+          </el-form-item>
           <el-form-item label="人脸检测框：" prop="camera_params.detect_box">
             <el-select v-model="form.camera_params.detect_box" style="width: 200px">
+              <el-option
+                v-for="item in options"
+                :key="item.value"
+                :label="item.label"
+                :value="item.value"
+              ></el-option>
+            </el-select>
+          </el-form-item>
+          <el-form-item label="上报未识别人员：" prop="camera_params.not_pass_report">
+            <el-select v-model="form.camera_params.not_pass_report" style="width: 200px">
               <el-option
                 v-for="item in options"
                 :key="item.value"
@@ -221,14 +271,16 @@
           </div>
         </div>
         <el-form-item v-if="submitType === 'editStream'" label="流媒体：" prop="stream_ids">
-          <el-select v-model="form.stream_ids" style="width: 200px" multiple>
-            <el-option
-              v-for="item in streamList"
-              :key="item.id"
-              :label="item.name"
-              :value="item.id"
-            ></el-option>
-          </el-select>
+          <el-tooltip content="智能网关 暂不支持 中科视拓智能摄像头-hi" placement="right">
+            <el-select v-model="form.stream_ids" style="width: 200px" multiple>
+              <el-option
+                v-for="item in streamList"
+                :key="item.id"
+                :label="item.name"
+                :value="item.id"
+              ></el-option>
+            </el-select>
+          </el-tooltip>
         </el-form-item>
         <div v-if="submitType === 'updateApk'">
           <el-form-item label="已选设备：">
@@ -266,9 +318,9 @@
   </div>
 </template>
 <script>
-import Card from '@/components/Card/Card'
-import QueryBar from '@/components/Bar/QueryBar'
-import { getDeviceList, addDeviceList, editDeviceList, delDeviceList, findDeviceList, getDeviceGroupList, getStreamList, editDeviceStreamList, updateApk, responseDeviceList, getTimeTemplateList } from '@/api/getData'
+import Card from '@comp/Card/Card'
+import QueryBar from '@comp/Bar/QueryBar'
+import { getDeviceList, addDeviceList, editDeviceList, delDeviceList, findDeviceList, getDeviceGroupList, getStreamList, editDeviceStreamList, updateApk, responseDeviceList, getTimeTemplateList } from '@api/getData'
 import { setTimeout } from 'timers'
 export default {
   data () {
@@ -313,6 +365,10 @@ export default {
       recognizeTypeOptions: [ // 识别类型
         { value: 1, label: '1:n' },
         { value: 2, label: '1:1' }
+      ],
+      recognitionModeOptions: [ // 识别模式
+        { value: 1, label: '最大人脸识别' },
+        { value: 2, label: '多人脸识别' }
       ],
       deviceList: [], // 所有未知设备
       deviceGroupList: [], // 所有设备组
@@ -610,5 +666,5 @@ export default {
   }
 }
 </script>
-<style lang="stylus">
+<style lang="stylus" scoped>
 </style>

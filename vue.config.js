@@ -1,10 +1,9 @@
-// const path = require('path')
+const path = require('path')
 
-// function resolve (dir) {
-//   return path.join(__dirname, dir)
-// }
+function resolve (dir) {
+  return path.join(__dirname, dir)
+}
 const webpack = require('webpack')
-// const UglifyJsPlugin = require('uglifyjs-webpack-plugin')
 const ImageminPlugin = require('imagemin-webpack-plugin').default
 const imageminMozjpeg = require('imagemin-mozjpeg')
 
@@ -36,6 +35,16 @@ module.exports = {
       new webpack.BannerPlugin('Build by 打酱油'),
       // new UglifyJsPlugin() // 无法压缩es6代码
     ]
+  },
+
+  // 链式配置
+  chainWebpack: (config) => {
+    config.resolve.alias
+    .set('@api', resolve('src/api'))
+    .set('@utils', resolve('src/utils'))
+    .set('@assets', resolve('src/assets'))
+    .set('@comp', resolve('src/components'))
+    .set('@views', resolve('src/views'))
   },
 
   productionSourceMap: false // Disable during development

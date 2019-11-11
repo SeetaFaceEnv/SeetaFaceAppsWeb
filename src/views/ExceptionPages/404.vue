@@ -3,7 +3,7 @@
 </template>
 
 <script>
-import Exception from '@/components/Exception/Exception'
+import Exception from '@comp/Exception/Exception'
 export default {
   components: {
     Exception

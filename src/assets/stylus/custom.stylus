@@ -1,0 +1,16 @@
+// 自定义样式
+// 设置 queryBar 普通组件样式
+.query-bar-item
+  width 150px
+  margin-right 10px
+// 人员照片
+.member-image
+  width 100px
+  height 100px
+// 加载中 展示
+.loading-img // 图片垂直居中
+  position absolute
+  top 50%
+  left 50%
+  transform translate(-50%, -50%)
+  object-fit cover

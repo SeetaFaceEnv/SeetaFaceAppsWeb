@@ -2,6 +2,7 @@
 // 设置el-card__header下边框渐变
 .el-card__header
   padding 10px 20px
+  // Soul Colorful Line
   // border-bottom 2px transparent solid
   // border-image linear-gradient(to right, #0161E5, #E40493) 1 10
 // 设置el-card__body高度计算方式
@@ -13,26 +14,39 @@
 .el-menu
   background none
 .el-submenu__title
-  color white !important
   text-align left
+  user-select none // 不可选中文本
+  color white !important
   &:hover
     background linear-gradient(to right, rgba(151,246,255, 0.4), rgba(151,246,255, 0))
   i
     color white
 .el-menu-item
-  color white !important
   text-align left
+  user-select none // 不可选中文本
+  color white !important
   padding-left 64px !important
 
-.el-menu--inline
-  background none
+// .el-menu--inline
+//   background none
 .el-menu-item:hover
-  // box-shadow red 0 0 20px 0
   background linear-gradient(to right, rgba(151,246,255, 0.4), rgba(151,246,255, 0))
 .el-menu-item.is-active
   background linear-gradient(to right, rgba(151,246,255, 0.4), rgba(151,246,255, 0))
 .el-menu-item-group__title // 隐藏菜单分组显示
-  display: none
+  display none
+// 设置垂直菜单样式
+.el-menu--vertical
+  .el-menu
+    padding 0
+  .el-menu-item
+    background linear-gradient(to right, #40B2F3, #45E9C8)
+  .el-menu-item:hover
+    background linear-gradient(to right, #ED4264, #FFEDBC)
+  .el-menu-item.is-active
+    background linear-gradient(to right, #ED4264, #FFEDBC)
+  
+
 
 // 设置下拉选框样式
 .el-dropdown-menu__item
@@ -65,6 +79,6 @@
 
 // 标签样式
 .el-tag
-  margin-right 10px
+  margin 3px 10px 3px 0
   &:last-child
     margin-right 0

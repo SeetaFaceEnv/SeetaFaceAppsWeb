@@ -179,10 +179,10 @@
 
 <script>
 import moment from 'moment'
-import Card from '@/components/Card/Card'
-// import QueryBar from '@/components/Bar/QueryBar'
-import { removeInvalidTimeRange, removeWeekend, handeleSpecialDate, mergeDateObjAndTimeRange } from '@/utils/handleTime.js'
-import { getTimeTemplateList, addTimeTemplateList, editTimeTemplateList, delTimeTemplateList } from '@/api/getData'
+import Card from '@comp/Card/Card'
+// import QueryBar from '@comp/Bar/QueryBar'
+import { removeInvalidTimeRange, removeWeekend, handeleSpecialDate, mergeDateObjAndTimeRange } from '@utils/handleTime.js'
+import { getTimeTemplateList, addTimeTemplateList, editTimeTemplateList, delTimeTemplateList } from '@api/getData'
 export default {
   data () {
     let self = this

@@ -11,46 +11,56 @@
 </template>
 
 <script>
+import mqtt from 'mqtt'
 import moment from 'moment'
-import Header from '../components/Menu/Header'
-import SideMenu from '../components/Menu/SideMenu'
-import Contain from '../components/Contain/Contain'
-import { getTcpInfo } from '@/api/getData'
+import Header from '@comp/Header/Header'
+import SideMenu from '@comp/Menu/SideMenu'
+import Contain from '@comp/Contain/Contain'
+import { getMqttInfo } from '@api/getData'
 export default {
-  data () {
-    return {
-      index: 0 // 防止多次重连 影响浏览器性能
-    }
-  },
   components: {
     Header,
     SideMenu,
     Contain
   },
   mounted () {
-    if (!this.$store.state.isWsConnected) {
-      this.getWebsocketUrl()
-    }
+    this.getMqttUrl()
   },
   methods: {
-    // 获取websocket url
-    async getWebsocketUrl () {
-      const res = await getTcpInfo()
+    // 获取mqtt url
+    async getMqttUrl () {
+      const res = await getMqttInfo()
       if (res.data.result === 0) {
-        const url = res.data.gw_url + '/?token=' + res.data.gw_token
-        this.connectWebSocket(url)
+        const url = window.atob(res.data.mqtt_url)
+        this.connectMqtt(url, res.data.mqtt_user || '', res.data.mqtt_pwd || '')
       }
     },
-    // 连接websocket
-    connectWebSocket (url) {
-      const ws = new WebSocket(url)
-      ws.onopen = (evt) => {
-        this.$store.commit('changeIsWsConnected')
-        console.log('websocket连接成功', url)
+    // 连接mqtt
+    connectMqtt (url, user, pwd) {
+      const options = {
+        keepAliveInterval: 30000,
+        connectTimeout: 4000, // 超时时间
+        username: user,
+        password: pwd
       }
-      ws.onmessage = (evt) => {
-        // console.log(JSON.parse(evt.data))
-        const msgObj = JSON.parse(evt.data)
+      this.$store.state.mqttClient = mqtt.connect(url, options)
+
+      this.$store.state.mqttClient.on('connect', (e) => {
+        console.log('成功连接服务器')
+        // 订阅一个主题
+        this.$store.state.mqttClient.subscribe(`admin:topic_id:${sessionStorage.topic_id}`, { qos: 1 }, (error) => {
+          if (!error) {
+            this.$store.state.mqttTopic = `admin:topic_id:${sessionStorage.topic_id}`
+            console.log('订阅成功')
+          } else {
+            console.log('订阅失败')
+          }
+        })
+      })
+      // 接收消息
+      this.$store.state.mqttClient.on('message', (topic, message) => {
+        // console.log('收到来自', topic, '的消息', message.toString())
+        const msgObj = JSON.parse(message)
         switch (msgObj.command) {
           case 'device_status_change':
             this.notifyDeviceStatusChange(msgObj)
@@ -70,21 +80,19 @@ export default {
             break
           case 'repeat_login':
             this.$handleErrorNotify(`该账号于 ${this.transformToDateTime(msgObj.content.time)} 重复登录`, '重复登录', 0)
+            this.$store.state.mqttClient.unsubscribe(topic) // 退出登录前 取消订阅当前消息通道
             this.$router.push({ name: 'login' })
             break
         }
-      }
-      ws.onclose = (evt) => {
-        this.$store.commit('changeIsWsConnected')
-        console.log('websocket连接关闭', url)
-        if (this.index < 3) {
-          this.index = this.index + 1
-          setTimeout(() => {
-            console.log('websocket正在重新连接 次数' + this.index, url)
-            this.connectWebSocket(url)
-          }, 3000)
-        }
-      }
+      })
+      // 断开发起重连
+      this.$store.state.mqttClient.on('reconnect', (error) => {
+        console.log('正在重连:', error)
+      })
+      // 异常处理
+      this.$store.state.mqttClient.on('error', (error) => {
+        console.log('连接失败:', error)
+      })
     },
     // 通知用户设备状态变更
     notifyDeviceStatusChange (msgObj) {
@@ -108,7 +116,7 @@ export default {
     },
     // 时间戳转换为标准时间
     transformToDateTime (val) {
-      return moment(val * 1000).format('YYYY-MM-DD HH:mm:ss')
+      return moment(val).format('YYYY-MM-DD HH:mm:ss')
     }
   }
 }

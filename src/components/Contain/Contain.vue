@@ -6,8 +6,8 @@
   </div>
 </template>
 <script>
-import Breadcrumb from '../Breadcrumb/Breadcrumb'
-// import Footer from '../Footer/Footer'
+import Breadcrumb from '@comp/Breadcrumb/Breadcrumb'
+// import Footer from '@comp/Footer/Footer'
 export default {
   components: {
     Breadcrumb

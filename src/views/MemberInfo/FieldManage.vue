@@ -56,9 +56,9 @@
   </div>
 </template>
 <script>
-import Card from '@/components/Card/Card'
-// import QueryBar from '@/components/Bar/QueryBar'
-import { getFieldList, addFieldList, editFieldList, delFieldList } from '@/api/getData'
+import Card from '@comp/Card/Card'
+// import QueryBar from '@comp/Bar/QueryBar'
+import { getFieldList, addFieldList, editFieldList, delFieldList } from '@api/getData'
 export default {
   data () {
     return {
@@ -172,5 +172,5 @@ export default {
   }
 }
 </script>
-<style lang="stylus">
+<style lang="stylus" scoped>
 </style>

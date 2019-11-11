@@ -3,20 +3,20 @@ import App from './App.vue'
 import router from './router'
 import store from './store'
 import ElementUI from 'element-ui'
-
-import Util from '@/utils/util' // 全局变量
+import GlobalRemind from '@utils/globalRemind' // 全局提醒
 
 import 'element-ui/lib/theme-chalk/index.css'
-import '@/assets/css/init.css' // 初始化css样式
-import '@/assets/stylus/element-ui.stylus' // 初始化element-ui样式
-import '@/assets/css/scrollbar.css' // 滚动条样式
-import '@/assets/font-awesome/css/font-awesome.min.css' // 图标库
+import '@assets/css/init.css' // 初始化css样式
+import '@assets/stylus/element-ui.stylus' // 初始化element-ui样式
+import '@assets/css/scrollbar.css' // 滚动条样式
+import '@assets/font-awesome/css/font-awesome.min.css' // 图标库
+import '@assets/stylus/custom.stylus' // 自定义样式
 
-import '@/assets/stylus/fade.stylus' // 加载效果
+import '@assets/stylus/fade.stylus' // 加载效果
 
 Vue.config.productionTip = false
 Vue.use(ElementUI, { size: 'small' })
-Vue.use(Util)
+Vue.use(GlobalRemind)
 
 new Vue({
   router,

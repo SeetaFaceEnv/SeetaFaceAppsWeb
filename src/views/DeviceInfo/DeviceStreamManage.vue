@@ -14,8 +14,55 @@
       <!-- 表格 -->
       <el-table slot="contain" header-cell-class-name="table__header" row-class-name="table__row"
         :data="tableData" stripe height="calc(100% - 30px + 48px)">
+        <!-- 展开行 -->
+        <el-table-column type="expand">
+          <template slot-scope="props">
+            <el-form inline class="table-expand">
+              <el-form-item label="闪光灯：">
+                {{ optionsObj[props.row.camera_params.is_light] }}
+              </el-form-item>
+              <el-form-item label="活体检测：">
+                {{ optionsObj[props.row.camera_params.is_living_detect] }}
+              </el-form-item>
+              <el-form-item label="识别模式：">
+                {{ recognitionModeOptionsObj[props.row.camera_params.recognition_mode] }}
+              </el-form-item>
+              <el-form-item label="人脸检测框：">
+                {{ optionsObj[props.row.camera_params.detect_box] }}
+              </el-form-item>
+              <el-form-item label="上报未识别人员：">
+                {{ optionsObj[props.row.camera_params.not_pass_report] }}
+              </el-form-item>
+              <el-form-item label="继电器通道：">
+                <el-tag v-for="(item, index) in props.row.camera_params.relay_channels" :key="index">
+                  {{ item }}
+                </el-tag>
+              </el-form-item>
+            </el-form>
+          </template>
+        </el-table-column>
+        <!-- 列表 -->
         <el-table-column prop="name" label="流媒体名称"></el-table-column>
-        <el-table-column label="操作">
+        <el-table-column prop="camera_params.type" label="摄像头类型">
+          <template slot-scope="scope">
+            {{ cameraTypeObj[scope.row.camera_params.type] }}
+          </template>
+        </el-table-column>
+        <el-table-column prop="time_template_name" label="时间模板">
+          <template slot-scope="scope">
+            <el-tag v-if="scope.row.time_template_id">
+              {{ handleGetTimeTemplateNameById(scope.row.time_template_id) }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="camera_params.confidence" label="验证阈值"></el-table-column>
+        <el-table-column prop="camera_params.unsure" label="不可信阈值"></el-table-column>
+        <el-table-column prop="camera_params.min_clarity" label="最小清晰度"></el-table-column>
+        <el-table-column prop="camera_params.min_face" label="最小人脸宽度"></el-table-column>
+        <el-table-column prop="camera_params.max_angle" label="最大人脸角度"></el-table-column>
+        <el-table-column prop="camera_params.crop_ratio" label="截取比例"></el-table-column>
+        <el-table-column prop="camera_params.url" label="流媒体地址"></el-table-column>
+        <el-table-column label="操作" width="160">
           <template slot-scope="scope">
             <span class="span__bt" @click="editForm(scope.row)">编 辑</span>
             <el-divider direction="vertical"></el-divider>
@@ -57,7 +104,7 @@
             ></el-option>
           </el-select>
         </el-form-item>
-        <el-form-item label="流媒体地址：" v-if="form.camera_params.type === 'ipc-h264'" prop="camera_params.url">
+        <el-form-item label="流媒体地址：" prop="camera_params.url">
           <el-input v-model="form.camera_params.url" style="width: 200px"></el-input>
         </el-form-item>
         <div v-if="submitType === 'edit'">
@@ -75,7 +122,7 @@
           </el-form-item>
           <el-form-item label="识别类型：" prop="camera_params.recognize_type">
             <el-tooltip content="1:1识别模式仅对人证一体机设备生效" placement="right">
-              <el-select v-model="form.camera_params.recognize_type" style="width: 200px">
+              <el-select v-model="form.camera_params.recognize_type" disabled style="width: 200px">
                 <el-option
                   v-for="item in recognizeTypeOptions"
                   :key="item.value"
@@ -86,16 +133,16 @@
             </el-tooltip>
           </el-form-item>
           <el-form-item v-if="form.camera_params.recognize_type === 2" label="1:1验证阈值：" prop="camera_params.threshold_11">
-            <el-input-number v-model="form.camera_params.threshold_11 " :min="0.01" :max="0.99" :step="0.1"/>
+            <el-input-number v-model="form.camera_params.threshold_11 " :min="0.01" :max="0.99" :step="0.01"/>
           </el-form-item>
           <el-form-item v-if="form.camera_params.recognize_type === 1" label="1:n验证阈值：" prop="camera_params.confidence">
-            <el-input-number v-model="form.camera_params.confidence " :min="0.01" :max="0.99" :step="0.1"/>
+            <el-input-number v-model="form.camera_params.confidence " :min="0.01" :max="0.99" :step="0.01"/>
           </el-form-item>
           <el-form-item v-if="form.camera_params.recognize_type === 1" label="1:n不可信阈值：" prop="camera_params.unsure">
-            <el-input-number v-model="form.camera_params.unsure " :min="0.01" :max="0.99" :step="0.1"/>
+            <el-input-number v-model="form.camera_params.unsure " :min="0.01" :max="0.99" :step="0.01"/>
           </el-form-item>
           <el-form-item label="最小清晰度：" prop="camera_params.min_clarity">
-            <el-input-number v-model="form.camera_params.min_clarity " :min="0.01" :max="0.99" :step="0.1"/>
+            <el-input-number v-model="form.camera_params.min_clarity " :min="0.01" :max="0.99" :step="0.01"/>
           </el-form-item>
           <el-form-item label="最小人脸宽度：" prop="camera_params.min_face">
             <el-input-number v-model="form.camera_params.min_face " :min="10" :max="100000" :step="100"/>
@@ -105,19 +152,6 @@
           </el-form-item>
           <el-form-item label="截取比例：" prop="camera_params.crop_ratio">
             <el-input-number v-model="form.camera_params.crop_ratio " :min="0.1" :max="100" :step="1"/>
-          </el-form-item>
-          <el-form-item label="最大尝试人脸抓拍时长(s)：" prop="camera_params.capture_max_interval">
-            <el-input-number v-model="form.camera_params.capture_max_interval " :min="1" :max="1000" :step="1"/>
-          </el-form-item>
-          <el-form-item label="上报未识别人员：" prop="camera_params.not_pass_report">
-            <el-select v-model="form.camera_params.not_pass_report" style="width: 200px">
-              <el-option
-                v-for="item in options"
-                :key="item.value"
-                :label="item.label"
-                :value="item.value"
-              ></el-option>
-            </el-select>
           </el-form-item>
           <el-form-item label="闪光灯：" prop="camera_params.is_light">
             <el-select v-model="form.camera_params.is_light" style="width: 200px">
@@ -141,6 +175,16 @@
               </el-select>
             </el-tooltip>
           </el-form-item>
+          <el-form-item label="识别模式：" prop="camera_params.recognition_mode">
+            <el-select v-model="form.camera_params.recognition_mode" style="width: 200px">
+              <el-option
+                v-for="item in recognitionModeOptions"
+                :key="item.value"
+                :label="item.label"
+                :value="item.value"
+              ></el-option>
+            </el-select>
+          </el-form-item>
           <el-form-item label="人脸检测框：" prop="camera_params.detect_box">
             <el-select v-model="form.camera_params.detect_box" style="width: 200px">
               <el-option
@@ -148,6 +192,27 @@
                 :key="item.value"
                 :label="item.label"
                 :value="item.value"
+              ></el-option>
+            </el-select>
+          </el-form-item>
+          <el-form-item label="上报未识别人员：" prop="camera_params.not_pass_report">
+            <el-select v-model="form.camera_params.not_pass_report" style="width: 200px">
+              <el-option
+                v-for="item in options"
+                :key="item.value"
+                :label="item.label"
+                :value="item.value"
+              ></el-option>
+            </el-select>
+          </el-form-item>
+          <!-- 继电器相关 -->
+          <el-form-item label="继电器通道：" prop="camera_params.relay_channels">
+            <el-select v-model="form.camera_params.relay_channels" multiple :multiple-limit=1 style="width: 200px">
+              <el-option
+                v-for="item in 16"
+                :key="item"
+                :label="item"
+                :value="item"
               ></el-option>
             </el-select>
           </el-form-item>
@@ -161,9 +226,9 @@
   </div>
 </template>
 <script>
-import Card from '@/components/Card/Card'
-// import QueryBar from '@/components/Bar/QueryBar'
-import { getStreamList, addStreamList, editStreamList, delStreamList, getTimeTemplateList } from '@/api/getData'
+import Card from '@comp/Card/Card'
+// import QueryBar from '@comp/Bar/QueryBar'
+import { getStreamList, addStreamList, editStreamList, delStreamList, getTimeTemplateList } from '@api/getData'
 export default {
   data () {
     return {
@@ -185,16 +250,36 @@ export default {
       },
       cameraTypeList: [
         // { value: 'webcam', label: '本身摄像头' },
-        { value: 'ipc-h264', label: '网络摄像头' }
+        { value: 'ipc-h264', label: '网络摄像头' },
+        { value: 'seeta-hz001', label: '中科视拓智能摄像头-hz' },
+        { value: 'seeta-hi001', label: '中科视拓智能摄像头-hi' }
       ],
       options: [ // 开启控制
         { value: 1, label: '开启' },
         { value: 2, label: '关闭' }
       ],
       recognizeTypeOptions: [ // 识别类型
-        { value: 1, label: '1:n' },
-        { value: 2, label: '1:1' }
+        { value: 1, label: '1:n' }
+        // { value: 2, label: '1:1' }
       ],
+      recognitionModeOptions: [ // 识别模式
+        { value: 1, label: '最大人脸识别' },
+        { value: 2, label: '多人脸识别' }
+      ],
+      // 控制table展示内容
+      cameraTypeObj: {
+        'ipc-h264': '网络摄像头',
+        'seeta-hz001': '中科视拓智能摄像头-hz',
+        'seeta-hi001': '中科视拓智能摄像头-hi'
+      },
+      optionsObj: {
+        '1': '开启',
+        '2': '关闭'
+      },
+      recognitionModeOptionsObj: {
+        '1': '最大人脸识别',
+        '2': '多人脸识别'
+      },
       timeTemplateList: [] // 所有时间模板
     }
   },
@@ -203,6 +288,7 @@ export default {
     // QueryBar
   },
   mounted () {
+    this.findTimeTemplateList()
     this.getData()
   },
   methods: {
@@ -242,7 +328,6 @@ export default {
     addForm () {
       this.titleText = '新增流媒体'
       this.submitType = 'add'
-      this.findTimeTemplateList()
       this.dialogVisible = true
     },
     // 显示编辑表单
@@ -250,7 +335,6 @@ export default {
       this.titleText = '编辑流媒体'
       this.submitType = 'edit'
       this.form = JSON.parse(JSON.stringify(row))
-      this.findTimeTemplateList()
       this.dialogVisible = true
     },
     // 删除表单
@@ -284,6 +368,14 @@ export default {
         this.timeTemplateList = res.data.time_templates
       }
     },
+    // 使用id查找字段名称
+    handleGetTimeTemplateNameById (timeTemplateId) {
+      for (let item of this.timeTemplateList) {
+        if (item.id === timeTemplateId) {
+          return item.name
+        }
+      }
+    },
     // 切换分页条件
     handleSizeChange (val) {
       this.pageSize = val
@@ -296,5 +388,10 @@ export default {
   }
 }
 </script>
-<style lang="stylus">
+<style lang="stylus" scoped>
+.table-expand
+  >>> label
+    font-weight 600
+  .el-form-item
+    width 30%
 </style>

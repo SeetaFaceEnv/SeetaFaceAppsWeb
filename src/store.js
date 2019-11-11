@@ -10,8 +10,9 @@ export default new Vuex.Store({
     isCollapse: false, // 侧边栏状态(未启用)
     breadcrumb: [], // 面包屑状态
     activeMenuPath: '', // 侧边栏激活状态路径
-    isWsConnected: false, // websocket是否连接
-    isLoginPage: false // 是否是首页
+    isLoginPage: false, // 是否是首页
+    mqttClient: null, // mqtt客户端订阅
+    mqttTopic: '' // mqtt订阅主题
   },
   mutations: {
     closeIsSubmitting (state) { // 关闭提交状态
@@ -26,9 +27,6 @@ export default new Vuex.Store({
     changeIsCollapse (state) { // 改变侧边栏状态
       state.isCollapse = !state.isCollapse
     },
-    changeIsWsConnected (state) { // 改变websocket是否连接状态
-      state.isWsConnected = !state.isWsConnected
-    },
     changeBreadcrumb (state, toPath) { // 修改面包屑内容
       state.activeMenuPath = toPath
       state.breadcrumb = toPath.split('/')
@@ -36,6 +34,5 @@ export default new Vuex.Store({
     }
   },
   actions: {
-
   }
 })

@@ -51,10 +51,10 @@
           </el-menu-item-group>
         </el-submenu>
       </el-menu>
-      <!-- <div id="end">
+      <div id="end">
         <i style="font-size: 30px;cursor: pointer" @click="changeIsCollapse"
-          :class="isCollapse ? 'el-icon-s-unfold' : 'el-icon-s-fold' "></i>
-      </div> -->
+          :class="isCollapse ? 'el-icon-s-unfold' : 'el-icon-s-fold'"></i>
+      </div>
     </div>
   </transition>
 </template>
@@ -72,7 +72,23 @@ export default {
     }
   },
   mounted () {
+    let _this = this
     this.isShow = true
+    let x = window.matchMedia('(max-width: 1200px)')
+    listenScreenWidth(x) // 执行时调用的监听函数
+    x.addListener(listenScreenWidth) // 状态改变时添加监听器
+    // 监听窗口变化 过窄收起侧边栏 过宽展开侧边栏
+    function listenScreenWidth (x) {
+      if (x.matches) { // 媒体查询
+        if (!_this.$store.state.isCollapse) {
+          _this.changeIsCollapse()
+        }
+      } else {
+        if (_this.$store.state.isCollapse) {
+          _this.changeIsCollapse()
+        }
+      }
+    }
   },
   methods: {
     changeIsCollapse () {
