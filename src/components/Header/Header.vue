@@ -17,18 +17,25 @@
             v-for="(item, index) in rightMenuList" :key="index">
             {{ item.titleName }}
           </li>
+          <!-- <li @click="changeLanguage" style="margin-left: 20px">
+            <i style="font-size: 20px" class="fa fa-globe" aria-hidden="true"></i>
+            {{ $t("headerInfo.language") }}
+          </li> -->
           <li style="margin-left: 20px">
             <i style="font-size: 20px" class="el-icon-s-custom"></i>
             <el-dropdown @command="clickDropdownItem">
               <span class="el-dropdown-link">
-                {{username}}<i class="el-icon-arrow-down el-icon--right"></i>
+                {{ username }}
+                <i style="color: #9C9C9C" class="fa fa-vimeo-square fa-lg" aria-hidden="true"></i>
+                <i class="el-icon-arrow-down el-icon--right"></i>
               </span>
               <el-dropdown-menu slot="dropdown">
-                <el-dropdown-item command="changePassword">
+                <!-- <el-dropdown-item command="changePassword">
                   <i class="fa fa-key" aria-hidden="true"></i>修改密码
-                </el-dropdown-item>
+                </el-dropdown-item> -->
                 <el-dropdown-item command="exit">
-                  <i class="fa fa-sign-out" aria-hidden="true"></i>退出
+                  <i class="fa fa-sign-out" aria-hidden="true"></i>
+                  {{ $t("headerInfo.logout") }}
                 </el-dropdown-item>
               </el-dropdown-menu>
             </el-dropdown>
@@ -49,7 +56,7 @@
           </ul>
         </div>
       </transition> -->
-      <!-- 编辑框 -->
+      <!-- 对话框 -->
       <el-dialog
         :title="titleText"
         :modal-append-to-body='false'
@@ -59,17 +66,17 @@
         @close="dialogClose()">
         <el-form :model="form" :rules="rules" style="text-align: left" ref="form" label-width="120px">
           <el-form-item label="原密码：" prop="password">
-            <el-input v-model="form.password" type="password" style="width: 200px">
+            <el-input v-model="form.password" type="password" style="width: 200px" show-password>
               <i slot="prefix" style="padding-left: 6px" class="fa fa-lock" aria-hidden="true"></i>
             </el-input>
           </el-form-item>
           <el-form-item label="新密码：" prop="password_new">
-            <el-input v-model="form.password_new" type="password" style="width: 200px">
+            <el-input v-model="form.password_new" type="password" style="width: 200px" show-password>
               <i slot="prefix" style="padding-left: 6px" class="fa fa-unlock-alt" aria-hidden="true"></i>
             </el-input>
           </el-form-item>
           <el-form-item label="确认密码：" prop="password_new_sure">
-            <el-input v-model="form.password_new_sure" type="password" style="width: 200px">
+            <el-input v-model="form.password_new_sure" type="password" style="width: 200px" show-password>
               <i slot="prefix" style="padding-left: 6px" class="fa fa-unlock-alt" aria-hidden="true"></i>
             </el-input>
             <!-- 待添加二次确认密码验证 -->
@@ -85,9 +92,8 @@
   </transition>
 </template>
 <script>
-import NodeRSA from 'node-rsa'
-import { accountLogout, accountResetPassword } from '@api/getData'
-import { validatePasswordMoreSix } from '@utils/validateForm'
+import { adminLogout, editAdminList } from '@api/getData'
+import { validatePasswordMoreSixAndLessThirty } from '@utils/formHandle/validateForm.js'
 export default {
   name: 'Header',
   data () {
@@ -106,28 +112,29 @@ export default {
       leftMenuList: [ // 左侧菜单内容
       ],
       rightMenuList: [ // 右侧菜单内容
-        { activeName: 'About', titleName: '关于我们', activeUrl: 'http://www.seetatech.com/index.html' }
+        { activeName: 'PassDisplay', titleName: '识别展示', routerName: 'pass-display' },
+        { activeName: 'Theme', titleName: this.$t('headerInfo.theme'), stateMutation: 'changeIsThemeMenuShow' }
       ],
       activeName: '', // 导航栏激活名称
       color: '',
       menuColor: {
         activeColor: localStorage.color || '#f4433c'
       },
-      titleText: '修改密码', // 编辑框标题
+      titleText: '修改密码', // 对话框标题
       dialogVisible: false,
       form: {},
       rules: { // 表单校验
         password: [
           { required: true, message: '请输入原密码', trigger: 'blur' },
-          { validator: validatePasswordMoreSix, trigger: 'blur' }
+          { validator: validatePasswordMoreSixAndLessThirty, trigger: 'blur' }
         ],
         password_new: [
           { required: true, message: '请输入新密码', trigger: 'blur' },
-          { validator: validatePasswordMoreSix, trigger: 'blur' }
+          { validator: validatePasswordMoreSixAndLessThirty, trigger: 'blur' }
         ],
         password_new_sure: [
           { required: true, message: '请再次确认密码', trigger: 'blur' },
-          { validator: validatePasswordMoreSix, trigger: 'blur' },
+          { validator: validatePasswordMoreSixAndLessThirty, trigger: 'blur' },
           { validator: validatePasswordSure, trigger: 'blur' }
         ]
       }
@@ -135,11 +142,24 @@ export default {
   },
   mounted () {
     this.isShow = true
+    if (!localStorage.locale) {
+      localStorage.setItem('locale', 'zh')
+    }
   },
   methods: {
     toActiveMenuItem (item) { // 激活导航菜单
+      switch (item.activeName) {
+        case 'Theme':
+          this.$store.commit(item.stateMutation)
+          break
+        case 'PassDisplay':
+          this.$router.push({ name: item.routerName })
+          break
+        default:
+          console.warn('请检查菜单选项！')
+          break
+      }
       // this.activeName = item.titleName
-      window.open(item.activeUrl, '_blank')
     },
     async clickDropdownItem (command) {
       switch (command) {
@@ -147,29 +167,37 @@ export default {
           this.dialogVisible = true
           break
         case 'exit':
-          const res = await accountLogout({})
-          if (res.data.result === 0) {
-            if (this.$store.state.mqttClient && this.$store.state.mqttTopic) {
-              this.$store.state.mqttClient.unsubscribe(this.$store.state.mqttTopic) // 退出登录前 取消订阅当前消息通道
+          this.$confirm('是否退出登录?', '提示', {
+            confirmButtonText: '确定',
+            cancelButtonText: '取消',
+            type: 'warning'
+          }).then(async () => {
+            const res = await adminLogout()
+            if (res.data.res === 0) {
+              // if (this.$store.state.mqttClient) {
+              //   this.$store.state.mqttClient.end() // 断开mqtt连接
+              // }
+              this.$router.replace({ name: 'login' })
+              this.$handleSuccessMessage('退出成功')
             }
-            this.$router.push({ name: 'login' })
-            this.$handleSuccessMessage('退出成功')
-          }
+          }).catch((e) => { console.log(e) })
           break
       }
     },
     formSubmit (formName) {
       this.$refs[formName].validate(async (valid) => {
         if (valid) {
-          let pubKey = new NodeRSA(sessionStorage.getItem('public_key'))
           let tempForm = {}
-          this.$set(tempForm, 'password', pubKey.encrypt(this.form.password, 'base64'))
-          this.$set(tempForm, 'password_new', pubKey.encrypt(this.form.password_new, 'base64'))
-          const res = await accountResetPassword({
+          // tempForm.password = aesEncryptByLocal(this.form.password)
+          // tempForm.newPassword = aesEncryptByLocal(this.form.password_new)
+          const res = await editAdminList({
             ...tempForm
           })
-          if (res.data.result === 0) {
+          if (res.data.res === 0) {
             this.$handleSuccessMessage('密码修改成功')
+            if (this.$store.state.mqttClient) {
+              this.$store.state.mqttClient.end() // 断开mqtt连接
+            }
             this.$router.push({ name: 'login' }) // 回到登录页面
             this.dialogVisible = false
           }
@@ -181,6 +209,11 @@ export default {
       // 清除校验信息
       this.$refs.form.clearValidate()
       this.form = {}
+    },
+    changeLanguage () {
+      this.$router.go(0)
+      localStorage.setItem('locale', localStorage.locale === 'zh' ? 'en' : 'zh')
+      this.$i18n.locale = localStorage.locale // 切换显示语言
     }
   }
 }
@@ -201,6 +234,7 @@ export default {
   .container
     width 100%
     height 100%
+    overflow hidden
     .container-left-ul
       float left
       li

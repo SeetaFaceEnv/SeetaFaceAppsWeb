@@ -1,4 +1,5 @@
-const Utils = {
+// 全局提醒工具类
+const globalRemind = {
   install (Vue, option) {
     // 成功消息
     Vue.prototype.$handleSuccessMessage = msg => {
@@ -56,6 +57,7 @@ const Utils = {
         type: 'warning',
         title: title || '警告',
         message: msg,
+        dangerouslyUseHTMLString: true,
         duration: duration !== null ? duration : 1500
       })
     }
@@ -71,4 +73,4 @@ const Utils = {
   }
 }
 
-export default Utils
+export default globalRemind

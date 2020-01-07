@@ -1,5 +1,5 @@
-function download (res, fileName) {
-  const blob = new Blob([res.data])
+function download (data, fileName) {
+  const blob = new Blob([data])
   const downloadElement = document.createElement('a')
   const href = window.URL.createObjectURL(blob) // 创建下载的链接
   downloadElement.href = href

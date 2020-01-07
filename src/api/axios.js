@@ -1,12 +1,11 @@
 import axios from 'axios'
-import store from '../store' // 引入状态管理
-import Router from '@/router'
+import store from '@/store/index.js' // 引入状态管理
+import Router from '@/router/index.js'
 import baseUrl from './baseUrl'
-import { getType } from '@utils/getType.js' // 获取准确数据类型
+import { getType } from '@utils/dataHandle/getType.js' // 获取准确数据类型
 import { Notification } from 'element-ui'
 
 axios.defaults.baseURL = baseUrl
-
 // axios.defaults.timeout = 10000
 
 export default (method, url, data, config) => {
@@ -14,9 +13,30 @@ export default (method, url, data, config) => {
   // 根据method实现对应请求方式
   switch (method) {
     case 'get':
-      return axios.post(url, { params: data }, config)
+      return axios({ method: 'get', url, headers: { 'Token': sessionStorage.token }, params: data })
+      // return axios.get(url, { params: data })
     case 'post':
-      return axios.post(url, data, config)
+      // 判断headers中添加token
+      if (sessionStorage.token) {
+        if (config && config['Content-Type'] === 'multipart/form-data') {
+          return axios({
+            method: 'post',
+            url,
+            headers: {
+              'Token': sessionStorage.token,
+              'Content-Type': 'multipart/form-data'
+            },
+            data,
+            config
+          })
+        }
+        if (config) {
+          return axios({ method: 'post', url, headers: { 'Token': sessionStorage.token }, data, responseType: 'blob' })
+        }
+        return axios({ method: 'post', url, headers: { 'Token': sessionStorage.token }, data })
+      } else {
+        return axios.post(url, data, config)
+      }
     default:
       notificationError('错误', '请检查请求方式', 0)
       return false
@@ -26,20 +46,19 @@ export default (method, url, data, config) => {
 // 一、请求拦截器
 axios.interceptors.request.use((config) => {
   store.commit('openIsSubmitting') // 更改为提交中
-  const fm = new FormData()
-  if (config.data) {
-    for (let key in config.data) {
-      // 参数存在时，FormData传递该参数
-      if (config.data[key]) {
-        fm.append(key, config.data[key])
+  if (config.headers['Content-Type'] === 'multipart/form-data') {
+    const fm = new FormData()
+    if (config.data) {
+      for (let key in config.data) {
+        // 参数存在时，FormData传递该参数
+        if (config.data[key]) {
+          fm.append(key, config.data[key])
+        }
       }
     }
+    config.data = fm
+    return config
   }
-  // 添加session_id
-  if (sessionStorage.session_id) {
-    fm.append('session_id', sessionStorage.session_id)
-  }
-  config.data = fm
   return config
 }, (error) => {
   // 对请求错误做些什么
@@ -50,14 +69,17 @@ axios.interceptors.request.use((config) => {
 // 二、响应拦截器
 axios.interceptors.response.use((res) => {
   store.commit('closeIsSubmitting') // 更改为提交完成
-  // 判断 返回值是否为 blob （两种情况）
-  // 1、返回值为 文件流 （无需处理 直接返回下载）
-  // 2、返回值为 错误码转化的blob （转为obj 并提示错误信息）
+  /*
+    判断 返回值是否为 blob （两种情况）
+    1、返回值为 文件流 （无需处理 直接返回下载）
+    2、返回值为 错误码转化的blob （转为obj 并提示错误信息）
+  */
   if (getType(res.data) === 'Blob') {
-    if (res.data.type === 'text/html') {
-      // console.log('返回错误')
+    // console.log(res.data)
+    if (res.data.type === 'application/json') {
       let fileReader = new FileReader()
       fileReader.onload = (e) => {
+        // console.log(e.target)
         let tempData = JSON.parse(e.target.result)
         notificationError('错误', tempData.msg, 2000)
       }
@@ -65,21 +87,26 @@ axios.interceptors.response.use((res) => {
     }
     return res
   }
-  // token过期，返回登录页
-  if (res.data.result === 1111) {
-    if (store.state.mqttClient && store.state.mqttTopic) {
-      store.state.mqttClient.unsubscribe(store.state.mqttTopic) // 退出登录前 取消订阅当前消息通道
-    }
-    notificationError('错误', res.data.msg, 3000)
-    Router.push('/')
-  } else if (res.data.result !== 0) {
-    // 返回值不为0，提示用户错误信息
+  // 返回值不为0，提示用户错误信息
+  if (res.data.res !== 0) {
     notificationError('错误', res.data.msg, 2000)
   }
   return res
 }, (error) => {
-  // 对响应错误做点什么
-  notificationError('系统错误', '服务器连接失败')
+  if (error.response.status === 401) {
+    // 防止异常导致无法退出
+    try {
+      if (store.state.mqttClient) {
+        store.state.mqttClient.end() // 断开mqtt连接
+      }
+    } catch (e) { console.error(e) }
+    store.commit('closeIsSubmitting') // 更改为提交完成
+    notificationError('错误', 'Token失效', 3000)
+    Router.push('/')
+  } else {
+    // 对响应错误做点什么
+    notificationError('系统错误', '服务器连接失败')
+  }
   return Promise.reject(error)
 })
 

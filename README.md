@@ -1,6 +1,7 @@
 # 前端项目
+
 ## 一、项目简介
-> **智慧园区社区版前端系统，通过简洁、精致的页面呈现，帮助用户精准、便捷的使用智慧园区的功能，还提供实时设备状态变更提醒功能，给予用户友好的使用体验。**
+> 设备管理平台社区版，通过简洁、精致的页面呈现，帮助用户精准、便捷的使用设备管理平台的功能，还提供实时设备状态变更提醒功能，给予用户友好的使用体验。
 
 ## 二、核心目录简介
 - dist 【打包构建后资源目录】
@@ -11,7 +12,7 @@
     - axios.js 【拦截器】
     - baseUrl.js 【基础路径】
     - getData.js 【接口定义】
-  - assets 【静态资源目录（webpack打包）】
+  - assets 【静态资源】
     - css 【项目初始化样式】
     - Exception 【异常处理资源】
     - font-awesome 【图标资源】
@@ -29,24 +30,26 @@
   - views 【视图目录】
     - DeviceInfo 【设备相关视图】
     - Login 【登录相关视图】
-    - MemberInfo 【人员相关视图】
+    - PassDisplay 【识别展示视图】
+    - PersonInfo 【人员相关视图】
     - RecordInfo 【记录相关视图】
     - SystemInfo 【系统相关视图】
+    - Welcome 【欢迎页视图】
     - Home.vue 【页面布局视图】
   - App.vue 【视图入口】
   - main.js 【项目主入口】
-  - router.js 【路由管理】
-  - store.js 【全局状态管理】
+  - router 【路由管理】
+  - store 【全局状态管理】
 - package.json 【项目说明及依赖】
 - vue.config.js 【webpack相关配置】
 
-## 三、项目实现（前端部分）
+## 三、项目实现
 ### Vue 2.x
-基于Vue cli 3.0 初始化项目
-基于Vue 2.6.10  实现
+基于`Vue cli 3.0`初始化项目
+基于`Vue 2.6.10`实现
 
 ### Element-UI
-基于Element-UI 2.11.0 实现页面展示
+基于`Element-UI 2.13.0`实现页面展示
 
 ## 四、项目运行
 使用项目前，请确保已成功安装node、npm工具。
@@ -63,32 +66,12 @@ npm run serve
 ```bash
 npm run build
 ```
-## 五、项目部署
-部署前请确保已成功安装nginx。
-
-**nginx 配置**
-```
-server {
-  listen xxxx;  // 监听端口号
-  location / {
-    root /home/ABC/vue_web; // 服务器中项目 打包后路径
-    index index.html; // 首页地址
-    try_files $uri $uri/ /index.html; // 防止刷新页面丢失
-  }
-}
-```
 
 **配置文件**
 
 调整后台地址可修改 public/config.js 文件
 ```
 window.g = {
-  baseURL: 'http://192.168.0.8:xxxx/' // 后台地址
+  baseURL: 'http://192.168.0.110:xxxx/' // 后台地址
 }
-```
-
-**Tips**
-```
-src/assets/stylus/custom.stylus // 自定义样式
-src/assets/stylus/element-ui.stylus // element-ui相关样式
 ```

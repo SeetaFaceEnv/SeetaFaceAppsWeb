@@ -1,7 +1,7 @@
 /* 自定义element-ui样式 */
 // 设置el-card__header下边框渐变
 .el-card__header
-  padding 10px 20px
+  padding 0 20px
   // Soul Colorful Line
   // border-bottom 2px transparent solid
   // border-image linear-gradient(to right, #0161E5, #E40493) 1 10
@@ -40,13 +40,11 @@
   .el-menu
     padding 0
   .el-menu-item
-    background linear-gradient(to right, #40B2F3, #45E9C8)
+    background #11AFAF
   .el-menu-item:hover
-    background linear-gradient(to right, #ED4264, #FFEDBC)
+    background #ED4264
   .el-menu-item.is-active
-    background linear-gradient(to right, #ED4264, #FFEDBC)
-  
-
+    background #c83660
 
 // 设置下拉选框样式
 .el-dropdown-menu__item
@@ -71,7 +69,7 @@
   color #346DD4
   cursor pointer
 .el-divider--vertical
-  margin 0 20px
+  margin 0 10px
 
 // 上传图片超过最大限制时，隐藏上传图标
 .disabled .el-upload--picture-card
@@ -82,3 +80,7 @@
   margin 3px 10px 3px 0
   &:last-child
     margin-right 0
+
+// 抽屉样式
+.el-drawer
+  text-align left

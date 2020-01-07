@@ -1,3 +1,12 @@
 // 配置页头的相关参数
 $header-height = 50px
 $header-li-width = 70px
+
+// 配置侧边栏相关参数
+$sideMenuWidth = 200px
+
+// 配置card-menu-item的相关参数
+$card-menu-item-height = 30px
+$card-menu-item-padding = 6px
+$card-menu-item-margin-right = 30px
+$card-button-group-height = $card-menu-item-height + 2 * $card-menu-item-padding

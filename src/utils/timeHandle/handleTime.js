@@ -36,22 +36,20 @@ function removeWeekend (initDateObjList) {
   let finalDateObjList = []
   for (let item of initDateObjList) {
     if (moment(item).format('E') !== '6' && moment(item).format('E') !== '7') {
-      finalDateObjList.push(item)
-      // console.log(item + '是周末')
+      finalDateObjList.push(item) // 添加非周末日期
     }
   }
-  // console.log('执行去除周末')
   return finalDateObjList
 }
 // 处理单独通行日期
-function handeleSpecialDate (initDateObjList, specialValidDateList, specialInvalidDateList) {
+function handleSpecialDate (initDateObjList, specialValidDateList, specialInvalidDateList) {
   // 增加单独通行日期
   for (let item of specialValidDateList) {
     if (initDateObjList.indexOf(item) === -1) {
       initDateObjList.push(item)
     }
   }
-  // // 除去单独停用日期
+  // 除去单独停用日期
   for (let item of specialInvalidDateList) {
     let index = initDateObjList.indexOf(item)
     if (index !== -1) {
@@ -63,21 +61,6 @@ function handeleSpecialDate (initDateObjList, specialValidDateList, specialInval
 
 // 合并日期和时间区间
 function mergeDateObjAndTimeRange (initDateObjList, timeRangeList) {
-  // 处理启用时间区间
-  // let tempTimeList = []
-  // for (let item of timeRangeList) {
-  //   let tempObj = {}
-  //   tempObj.begin = item.value[0]
-  //   tempObj.end = item.value[1]
-  //   tempTimeList.push(tempObj)
-  // }
-  // let finalDateObj = {}
-  // // 生成最终时间对象
-  // for (let item of initDateObjList) {
-  //   finalDateObj[item.substring(5)] = tempTimeList
-  // }
-  // return finalDateObj
-
   let finalDateObjList = []
   // slots value 生成
   let solts = []
@@ -96,4 +79,54 @@ function mergeDateObjAndTimeRange (initDateObjList, timeRangeList) {
   return finalDateObjList
 }
 
-export { removeInvalidTimeRange, removeWeekend, handeleSpecialDate, mergeDateObjAndTimeRange }
+// 获取某年内所有周末
+function getWeekendByYear (year) {
+  let finalDateList = []
+  let tempStart = moment(year, 'YYYY').startOf('year').format('YYYY-MM-DD')
+  let tempEnd = moment(year, 'YYYY').endOf('year').format('YYYY-MM-DD')
+  while (moment(tempStart).isSameOrBefore(tempEnd)) {
+    if (moment(tempStart).format('E') === '6' || moment(tempStart).format('E') === '7') {
+      finalDateList.push(tempStart) // 添加周末日期
+    }
+    tempStart = moment(tempStart).add(1, 'days').format('YYYY-MM-DD')
+  }
+  return finalDateList
+}
+
+// 去除或添加周末
+function mergeWeekend (dateList, weekendList, mergeType) {
+  if (mergeType === 'add') {
+    // Array => Obj
+    let dateObj = {}
+    dateList.forEach((date) => {
+      dateObj[date] = true
+    })
+    weekendList.forEach((weekend) => {
+      if (!dateObj[weekend]) {
+        dateList.push(weekend)
+      }
+    })
+    return dateList
+  } else if (mergeType === 'remove') {
+    let finalList = []
+    // Array => Obj
+    let weekendObj = {}
+    weekendList.forEach((weekend) => {
+      weekendObj[weekend] = true
+    })
+    dateList.forEach((date) => {
+      if (!weekendObj[date]) {
+        finalList.push(date)
+      }
+    })
+    return finalList
+  } else {
+    console.error('请检查周末合并类型是否正确！')
+  }
+}
+
+export
+{
+  removeInvalidTimeRange, removeWeekend, handleSpecialDate, mergeDateObjAndTimeRange,
+  getWeekendByYear, mergeWeekend
+}

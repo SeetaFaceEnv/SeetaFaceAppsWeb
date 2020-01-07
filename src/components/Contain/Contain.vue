@@ -1,16 +1,19 @@
 <template>
   <div class="contain">
     <Breadcrumb/>
+    <ThemeMenu/>
     <router-view/>
     <!-- <Footer/> -->
   </div>
 </template>
 <script>
+import ThemeMenu from '@comp/Menu/ThemeMenu'
 import Breadcrumb from '@comp/Breadcrumb/Breadcrumb'
 // import Footer from '@comp/Footer/Footer'
 export default {
   components: {
-    Breadcrumb
+    Breadcrumb,
+    ThemeMenu
     // Footer
   }
 }

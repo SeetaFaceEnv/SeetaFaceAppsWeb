@@ -1,11 +1,15 @@
 <template>
   <div class="home">
-    <Header></Header>
+    <keep-alive>
+      <Header/>
+    </keep-alive>
     <div class="left" :class="{ collapse: $store.state.isCollapse }">
-      <SideMenu/>
+      <keep-alive>
+        <SideMenu/>
+      </keep-alive>
     </div>
     <div class="right">
-      <Contain></Contain>
+      <Contain/>
     </div>
   </div>
 </template>
@@ -16,23 +20,40 @@ import moment from 'moment'
 import Header from '@comp/Header/Header'
 import SideMenu from '@comp/Menu/SideMenu'
 import Contain from '@comp/Contain/Contain'
-import { getMqttInfo } from '@api/getData'
 export default {
+  name: 'home',
+  data () {
+    return {
+      isConnected: true, // 是否连接成功
+      topicObj: {}, // mqtt订阅主题
+      descObj: {
+        true: '<strong style="color: #0aa858">恢复正常</strong><br>',
+        false: '<strong style="color: #f4433c">发生异常</strong><br>'
+      },
+      onlineDesc: {
+        true: '<strong style="color: #0aa858">恢复在线</strong><br>',
+        false: '<strong style="color: #f4433c">离线</strong><br>'
+      }
+    }
+  },
   components: {
     Header,
     SideMenu,
     Contain
   },
   mounted () {
-    this.getMqttUrl()
+    this.getMqttInfo()
+  },
+  beforeDestroy () {
+    this.$store.state.mqttClient.end() // 离开页面前断开mqtt连接
   },
   methods: {
     // 获取mqtt url
-    async getMqttUrl () {
-      const res = await getMqttInfo()
-      if (res.data.result === 0) {
-        const url = window.atob(res.data.mqtt_url)
-        this.connectMqtt(url, res.data.mqtt_user || '', res.data.mqtt_pwd || '')
+    getMqttInfo () {
+      if (sessionStorage.mqttUrl) {
+        this.connectMqtt(sessionStorage.mqttUrl, sessionStorage.mqttUser || '', sessionStorage.mqttPassword || '')
+      } else {
+        this.$handleErrorNotify('请检查mqtt地址！', 'EMQ连接失败', 0)
       }
     },
     // 连接mqtt
@@ -47,72 +68,58 @@ export default {
 
       this.$store.state.mqttClient.on('connect', (e) => {
         console.log('成功连接服务器')
-        // 订阅一个主题
-        this.$store.state.mqttClient.subscribe(`admin:topic_id:${sessionStorage.topic_id}`, { qos: 1 }, (error) => {
+        // 订阅设备状态变更topic
+        this.$store.state.mqttClient.subscribe(sessionStorage.statusTopic, { qos: 1 }, (error) => {
           if (!error) {
-            this.$store.state.mqttTopic = `admin:topic_id:${sessionStorage.topic_id}`
-            console.log('订阅成功')
+            this.topicObj.statusTopic = sessionStorage.statusTopic
+            console.log('设备状态topic订阅成功')
           } else {
-            console.log('订阅失败')
+            console.log('设备状态topic订阅失败')
           }
         })
       })
+
       // 接收消息
       this.$store.state.mqttClient.on('message', (topic, message) => {
-        // console.log('收到来自', topic, '的消息', message.toString())
+        // console.log(message.toString())
         const msgObj = JSON.parse(message)
-        switch (msgObj.command) {
-          case 'device_status_change':
-            this.notifyDeviceStatusChange(msgObj)
+        switch (topic) {
+          // case this.topicObj.admin:
+          //   this.$handleErrorNotify(`该账号于 ${this.transformToDateTime(msgObj.timestamp * 1000)} 重复登录`, '重复登录', 0)
+          //   this.$store.state.mqttClient.end() // 断开mqtt连接
+          //   this.$router.push({ name: 'login' })
+          //   break
+          case this.topicObj.statusTopic:
+            const displaySatus = msgObj.display_status === null ? '' : '应用显示' + this.descObj[msgObj.display_status]
+            const cameraStatus = msgObj.camera_status === null ? '' : '摄像头' + this.descObj[msgObj.camera_status]
+            const alive = msgObj.alive === null ? '' : this.onlineDesc[msgObj.alive]
+            this.$handleWarningNotify(
+              `${msgObj.device_code} 设备 于${this.transformToDateTime(msgObj.timestamp * 1000)}<br>` +
+              displaySatus + cameraStatus + alive, '设备状态变更', 0)
             // 添加异常处理
             try {
               // 页面处于设备管理页面时 发生状态变更刷新页面
-              if ((msgObj.content.status_type === 5 || msgObj.content.status_type === 6) &&
-                this.$route.name === 'device-manage') {
+              if (this.$route.name === 'device-manage') {
                 this.$store.commit('changeIsRefreshDeviceList')
               }
             } catch (e) {
-              console.log('Exception occurred by Home.vue', e)
+              console.error('Exception occurred by Home.vue', e)
             }
-            break
-          case 'image_register_fail':
-            this.$handleErrorNotify('人员照片注册失败')
-            break
-          case 'repeat_login':
-            this.$handleErrorNotify(`该账号于 ${this.transformToDateTime(msgObj.content.time)} 重复登录`, '重复登录', 0)
-            this.$store.state.mqttClient.unsubscribe(topic) // 退出登录前 取消订阅当前消息通道
-            this.$router.push({ name: 'login' })
             break
         }
       })
       // 断开发起重连
       this.$store.state.mqttClient.on('reconnect', (error) => {
-        console.log('正在重连:', error)
+        if (this.isConnected) {
+          this.isConnected = false
+          console.log('正在重连:', error)
+          this.$handleErrorNotify('mqtt连接异常，请联系管理员！', 'EMQ重连失败', 3000)
+        }
       })
       // 异常处理
       this.$store.state.mqttClient.on('error', (error) => {
         console.log('连接失败:', error)
       })
-    },
-    // 通知用户设备状态变更
-    notifyDeviceStatusChange (msgObj) {
-      const normalType = {
-        1: '摄像头恢复正常',
-        3: '应用显示恢复正常',
-        5: '恢复在线'
-      }
-      const exceptionType = {
-        2: '摄像头异常',
-        4: '应用显示异常',
-        6: '离线'
-      }
-      if (msgObj.content.status_type in normalType) { // 提示设备状态恢复正常
-        this.$handleSuccessNotify(` ${msgObj.content.device_name} 设备于 ${this.transformToDateTime(msgObj.content.time)}
-          ${normalType[msgObj.content.status_type]}`, '恢复', 0)
-      } else { // 提示设备状态出现异常
-        this.$handleErrorNotify(` ${msgObj.content.device_name} 设备于 ${this.transformToDateTime(msgObj.content.time)}
-          ${exceptionType[msgObj.content.status_type]}`, '异常', 0)
-      }
     },
     // 时间戳转换为标准时间
     transformToDateTime (val) {
@@ -122,22 +129,23 @@ export default {
 }
 </script>
 <style lang="stylus" scoped>
+@import "../assets/stylus/init.stylus"
 .home
   width 100%
   height 100%
   display flex
   padding-top 60px
   .left
-    width 200px !important
+    width $sideMenuWidth !important
     height 100%
     position relative
     overflow hidden
+    transition all 0.4s ease
   .right
     flex 1
     position relative
     top 0
     left 0
-
   .collapse
     width 64px !important
 </style>

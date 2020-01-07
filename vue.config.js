@@ -4,12 +4,10 @@ function resolve (dir) {
   return path.join(__dirname, dir)
 }
 const webpack = require('webpack')
-const ImageminPlugin = require('imagemin-webpack-plugin').default
-const imageminMozjpeg = require('imagemin-mozjpeg')
 
 module.exports = {
   // 根路径 默认使用/ vue cli 3.3+ 弃用 baseUrl
-  publicPath: '/',
+  publicPath: './',
   // 输出目录
   outputDir: 'dist',
   assetsDir: 'assets',
@@ -18,21 +16,7 @@ module.exports = {
     plugins: [
       // Ignore all locale files of moment.js
       new webpack.IgnorePlugin(/^\.\/locale$/, /moment$/),
-      new ImageminPlugin(
-        {
-          disable: process.env.NODE_ENV !== 'production', // Disable during development
-          pngquant: {
-            quality: '70-80'
-          },
-          plugins: [
-            imageminMozjpeg({
-              quality: 70,
-              progressive: true
-            })
-          ]
-        }
-      ),
-      new webpack.BannerPlugin('Build by 打酱油'),
+      new webpack.BannerPlugin('Build by 打酱油')
       // new UglifyJsPlugin() // 无法压缩es6代码
     ]
   },
@@ -43,8 +27,24 @@ module.exports = {
     .set('@api', resolve('src/api'))
     .set('@utils', resolve('src/utils'))
     .set('@assets', resolve('src/assets'))
+    .set('@i18n', resolve('src/i18n'))
     .set('@comp', resolve('src/components'))
     .set('@views', resolve('src/views'))
+  },
+  
+  // 开发服务器相关配置
+  devServer: {
+    port: 8088
+    // proxy: {
+    //   '/api': {
+    //     target: 'http://www.example.org',
+    //     changeOrigin: true,
+    //     ws: true,
+    //     pathRewrite: {
+    //       '^/api': ''
+    //     }
+    //   }
+    // }
   },
 
   productionSourceMap: false // Disable during development

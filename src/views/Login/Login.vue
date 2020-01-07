@@ -3,29 +3,31 @@
     <img id="logo" src="@assets/images/login-logo.png"/>
     <transition name="card-fade-show">
       <el-card v-show="isShow" class="login-box">
-        <h1 style="margin-bottom: 50px">账号登录</h1>
+        <h1 style="margin-bottom: 50px">{{ $t('loginPage.pageTitle') }}</h1>
         <el-form :model="form" :rules="rules" ref="form" @submit.native.prevent>
-          <el-form-item label="用户名：" prop="username">
+          <el-form-item :label="`${ $t('label.username') }：`" prop="username">
             <el-input v-model="form.username">
               <i slot="prefix" style="padding-left: 6px" class="fa fa-user" aria-hidden="true"></i>
             </el-input>
           </el-form-item>
-          <el-form-item label="密码：" prop="password">
+          <el-form-item :label="`${ $t('label.password') }：`" prop="password">
             <el-input v-model="form.password" type="password" show-password>
               <i slot="prefix" style="padding-left: 6px" class="fa fa-key" aria-hidden="true"></i>
             </el-input>
           </el-form-item>
-          <el-form-item label="验证码：" prop="verificationCode">
+          <el-form-item :label="`${ $t('label.code') }：`" prop="verificationCode">
             <br/>
             <el-input v-model="form.verificationCode" style="width: 140px;margin-right: 40px">
               <i slot="prefix" style="padding-left: 6px" class="fa fa-picture-o" aria-hidden="true"></i>
             </el-input>
-            <el-tooltip content="点击更换验证码" placement="top">
-              <img @click="changeImg()" :src="baseUrl + 'backend/account/generateVerifyCode?code_tag=' + time" alt="验证码"/>
+            <el-tooltip :content="$t('tip.changeCode')" placement="top">
+              <img @click="changeVerifyCodeImg()" :src="baseUrl + 'backend/admin/captcha?tag=' + uuid" alt="验证码"/>
             </el-tooltip>
           </el-form-item>
           <el-form-item>
-            <el-button id="login-bt" @click="preLogin('form')" native-type="submit" type="primary" :loading=$store.state.isSubmitting>登录</el-button>
+            <el-button id="login-bt" @click="loginSubmit('form')" native-type="submit" type="primary" :loading="$store.state.isSubmitting">
+              {{ $t('buttonText.login') }}
+            </el-button>
           </el-form-item>
         </el-form>
       </el-card>
@@ -33,26 +35,23 @@
   </div>
 </template>
 <script>
-import NodeRSA from 'node-rsa'
+import md5 from 'md5'
+import uuidv4 from 'uuid/v4'
 import baseUrl from '@api/baseUrl'
-import { accountPreLogin, accountLogin } from '@api/getData'
-import { validatePasswordMoreSix } from '@utils/validateForm'
+import { adminLogin } from '@api/getData'
+import { validatePasswordMoreSixAndLessThirty } from '@utils/formHandle/validateForm.js'
 export default {
   data () {
     return {
       isShow: false,
       baseUrl: baseUrl,
-      rsaKey: { // 前端公、私钥
-        publicKey: '',
-        privateKey: ''
-      },
-      time: Date.now() + '' + Math.floor(Math.random() * 100000), // 用于生成验证码信息
+      uuid: uuidv4(), // 用于生成验证码信息
       form: {},
       rules: {
         username: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
         password: [
           { required: true, message: '请输入密码', trigger: 'blur' },
-          { validator: validatePasswordMoreSix, trigger: 'blur' }
+          { validator: validatePasswordMoreSixAndLessThirty, trigger: 'blur' }
         ],
         verificationCode: [{ required: true, message: '请输入验证码', trigger: 'blur' }]
       }
@@ -61,56 +60,43 @@ export default {
   mounted () {
     this.isShow = true
     sessionStorage.clear()
-    const key = new NodeRSA({ b: 1024 })
-    this.rsaKey.publicKey = key.exportKey('public')
-    this.rsaKey.privateKey = key.exportKey('private')
   },
   methods: {
-    // 预登录 获取后台公钥
-    preLogin (formName) {
+    // 提交登录
+    loginSubmit (formName) {
       this.$refs[formName].validate(async (valid) => {
         if (valid) {
-          const res = await accountPreLogin({
-            account: this.form.username,
-            public_key: this.rsaKey.publicKey,
-            verify_code: this.form.verificationCode,
-            code_tag: this.time
-          })
-          if (res.data.result === 0) {
-            // 保存session_id、后台公钥
-            sessionStorage.setItem('session_id', res.data.session_id)
-            sessionStorage.setItem('public_key', new NodeRSA(this.rsaKey.privateKey)
-              .decrypt(res.data.public_key, 'utf8'))
-            this.login()
-          } else {
-            this.form.verificationCode = ''
-            this.time = Date.now() + '' + Math.floor(Math.random() * 100000)
-          }
+          this.login()
         }
       })
     },
     // 正式登录
-    async login () {
-      let pubKey = new NodeRSA(sessionStorage.getItem('public_key'))
-      const res = await accountLogin({
-        account: this.form.username,
-        password: pubKey.encrypt(this.form.password, 'base64')
+    async login (publicKey, preSessionId) {
+      const res = await adminLogin({
+        tag: this.uuid,
+        code: this.form.verificationCode,
+        name: this.form.username,
+        password: md5(this.form.password)
       })
-      if (res.data.result === 0) {
-        const accessToken = pubKey.decryptPublic(res.data.access_token, 'utf-8')
-        sessionStorage.setItem('access_token', accessToken.substr(92))
-        sessionStorage.setItem('topic_id', res.data.topic_id)
-        sessionStorage.setItem('username', res.data.username)
-        this.$router.push({ name: 'field-manage' }) // 进入管理页面
+      if (res.data.res === 0) {
+        // 保存用户名、token
+        sessionStorage.setItem('username', this.form.username)
+        sessionStorage.setItem('token', res.data.token)
+        // 保存EMQ连接信息
+        sessionStorage.setItem('mqttUrl', res.data.mqtt_url)
+        sessionStorage.setItem('mqttUser', window.atob(res.data.mqtt_user))
+        sessionStorage.setItem('mqttPassword', window.atob(res.data.mqtt_password))
+        sessionStorage.setItem('statusTopic', res.data.status_topic) // 设备状态变更topic
+        sessionStorage.setItem('recordTopic', res.data.record_topic) // 人员通行topic
+        this.$router.push({ name: 'welcome' }) // 进入欢迎页
         this.$handleSuccessMessage('登录成功')
       } else {
-        this.form.verificationCode = ''
-        this.time = Date.now() + '' + Math.floor(Math.random() * 100000)
+        this.changeVerifyCodeImg()
       }
     },
     // 修改验证码图片
-    changeImg () {
-      this.time = Date.now() + '' + Math.floor(Math.random() * 100000)
+    changeVerifyCodeImg () {
+      this.uuid = uuidv4()
       this.$set(this.form, 'verificationCode', '')
     }
   }

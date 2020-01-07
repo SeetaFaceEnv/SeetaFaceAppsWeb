@@ -32,8 +32,8 @@ export default {
   methods: {
     handleToHome () {
       // 是否登录 返回不同页面
-      if (sessionStorage.session_id) {
-        this.$router.push({ name: 'field-manage' })
+      if (sessionStorage.sessionId) {
+        this.$router.push({ name: 'welcome' })
       } else {
         this.$router.push({ name: 'login' })
       }

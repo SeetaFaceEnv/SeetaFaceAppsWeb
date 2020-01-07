@@ -1,4 +1,4 @@
-// 侧边栏出现效果
+// 顶部栏出现效果
 .header-fade-show-enter-active
   transition all 1s ease
 .header-fade-show-enter
@@ -13,6 +13,6 @@
 // Card出现效果
 .card-fade-show-enter-active
   transition all 1s ease
-.card-fade-show-enter 
+.card-fade-show-enter
   transform translateX(70px)
-  opacity: 0
+  opacity 0

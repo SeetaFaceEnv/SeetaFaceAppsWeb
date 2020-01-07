@@ -1,6 +1,6 @@
 // SideMenu
 // #282C34
-$headerBg = white
+$headerBg = #e5e5e5
 $headerTextColor = black
 $barGray = #333333
 $activeColor = $googleBlue
